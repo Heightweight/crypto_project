@@ -14,8 +14,10 @@ def PC_1(K):
 
 
 def left_shift(i, B):
+    #tam gdzie przesuniecie o 1
     if i == 0 or i == 1 or i == 8 or i == 15:
         B = B[1:] + [B[0]]
+    #tam gdzie przesuniecie o 2
     else:
         B = B[2:] + [B[0]] + [B[1]]
     return B
@@ -36,10 +38,14 @@ def PC_2(K):
 def key_schedule(K):
     K_i = [0] * 16
 
+    # wybór znaczących bitów za pomocą PC-1
     PC1 = PC_1(K)
+
+    # podział na C1 i D1
     C_i = PC1[:28]
     D_i = PC1[28:]
 
+    # 16 powtórzeń left_shift->PC-2
     for i in range(16):
         C_i = left_shift(i, C_i)
         D_i = left_shift(i, D_i)
@@ -127,11 +133,14 @@ def S(i, B):
              2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11]
     SB=[0]*4
 
+    # znalezienie wspolrzednych szukanej wartosci
     i = (B[0] << 1) + B[5]
     j = (B[1] << 3) + (B[2] << 2) + (B[3] << 1) + B[4]
 
+    # wskazanie wartosci na podstawie współrzędnych
     v = S[(i << 4) + j]
 
+    # rozpisanie na bity
     SB[0] = (v & 8) >> 3
     SB[1] = (v & 4) >> 2
     SB[2] = (v & 2) >> 1
@@ -153,21 +162,25 @@ def P(L):
 
 
 def f(R, K):
+    # XOR klucza i bloku R przekształconego za pomocą E
     B = list_xor(K, E(R))
     SB = []
+
+    # podział na 8 części i przepuszczenie ich przez S-boxy
     for i in range(8):
         SB += S(i, B[i * 6:(i + 1) * 6])
     return P(SB)
 
 
 def des_encrypt(I, K):
+    #weryfikacja poprawnosci danych
     if len(I) != 64:
         print("Dlugość bloku do zaszyforwania: " + str(len(I)))
         raise "Blok do zaszyfrowania złej długości!"
     if len(K) != 64:
         print("Dlugość klucza: " + str(len(K)))
         raise "Klucz złej długości!"
-# ---------------szyfrowanie des
+# --szyfrowanie des
     # key_schedule
     K_i = key_schedule(K)
 
@@ -193,18 +206,19 @@ def des_encrypt(I, K):
 
     # końcowa permutacja
     C = IP_1(P)
-# ---------------koniec szyfrowania des
+# --koniec szyfrowania des
     return C
 
 
 def des_decrypt(C, K):
+    # weryfikacja poprawnosci danych
     if len(C) != 64:
         print("Dlugość bloku do zaszyforwania: " + str(len(C)))
         raise "Blok do zaszyfrowania złej długości!"
     if len(K) != 64:
         print("Dlugość klucza: " + str(len(K)))
         raise "Klucz złej długości!"
-    # ---------------deszyfrowanie des
+# --deszyfrowanie des
     # key_schedule
     K_i = key_schedule(K)
 
@@ -234,10 +248,12 @@ def des_decrypt(C, K):
     return I
 
 def tdea_encrypt(I, K_1, K_2):
+    # 3DES zgodny z trybem K1 = K3
     return des_encrypt(des_decrypt(des_encrypt(I, K_1), K_2), K_1)
 
 
 def tcfb_encrypt(P, K, IV, KEY):
+    # weryfikacja poprawnosci danych
     if isinstance(P, str):
         try:
             P = P.encode('ascii')
@@ -255,9 +271,13 @@ def tcfb_encrypt(P, K, IV, KEY):
                         raise "Niepoprawnie kodowanie klucza!"
                 if isinstance(KEY, bytes):
                     key = bytes_to_list(KEY)
+# ------------------szyfrowanie tcfb
+
+                    # wyodrebnienie kluczy
                     Key_1 = key[:64]
                     Key_2 = key[64:]
-                    # ---------------szyfrowanie tcfb
+
+                    # przypisanie wartosci IV do Input'u
                     I_i = bytes_to_list(IV)
                     if len(I_i) > 64:
                         raise "Zbyt długie IV!"
@@ -265,6 +285,7 @@ def tcfb_encrypt(P, K, IV, KEY):
                         I_i = [0] * (64 - len(I_i)) + I_i
                     print("Wykorzystywane IV: \n" + str(I_i))
 
+                    # zastosowanie ewentualnego paddingu
                     if len(data) % K != 0:
                         padding_length = K - (len(data) % K)
                         print("Dodawany jest padding wielkości: " + str(padding_length))
@@ -272,6 +293,8 @@ def tcfb_encrypt(P, K, IV, KEY):
                         print("Szyfrowana jest wiadomość z paddingiem: \n" + str(data) + ".")
 
                     C = []
+
+                    # kolejne segmenty szyfrowania bloków w trybie CFB
                     for i in range(int(len(data) / K)):
                         print("Szyfrowanie od " + str(i * K) + " do " + str((i + 1) * K) + " bitów bloku danych.")
                         P_i = data[i * K:(i + 1) * K]
@@ -279,11 +302,11 @@ def tcfb_encrypt(P, K, IV, KEY):
                         C_i = list_xor(P_i, O[:K])
                         C += C_i
                         I_i = I_i[K:] + C_i
-                    # ---------------koniec szyfrowania tcfb
                     print("Zaszyfrowana wiadomość w bitach: \n" + str(C))
                     cyphertext = list_to_bytes(C).hex()
                     print("Zaszyfrowana wiadomość: " + str(cyphertext))
                     return cyphertext
+# ------------------koniec szyfrowania tcfb
                 else:
                     raise "Niepoprawny typ klcza!"
             else:
@@ -295,6 +318,7 @@ def tcfb_encrypt(P, K, IV, KEY):
 
 
 def tcfb_decrypt(C, K, IV, KEY):
+    # weryfikacja poprawnosci danych
     if isinstance(C, str):
         try:
             C = C.encode('ascii')
@@ -312,9 +336,13 @@ def tcfb_decrypt(C, K, IV, KEY):
                         raise "Niepoprawnie kodowanie klucza!"
                 if isinstance(KEY, bytes):
                     key = bytes_to_list(KEY)
+# ------------------deszyfrowanie tcfb
+
+                    # wyodrebnienie kluczy
                     K_1 = key[:64]
                     K_2 = key[64:]
-                    # ---------------szyfrowanie tcfb
+
+                    # przypisanie wartosci IV do Input'u
                     I_i = bytes_to_list(IV)
                     if len(I_i) > 64:
                         raise "Zbyt długie IV!"
@@ -322,6 +350,7 @@ def tcfb_decrypt(C, K, IV, KEY):
                         I_i = [0] * (64 - len(I_i)) + I_i
                     print("Wykorzystywane IV: \n" + str(I_i))
 
+                    # zastosowanie ewentualnego paddingu
                     if len(data) % K != 0:
                         padding_length = K - (len(data) % K)
                         print("Dodawany jest padding wielkości: " + str(padding_length))
@@ -329,6 +358,8 @@ def tcfb_decrypt(C, K, IV, KEY):
                         print("Deszyfrowana jest wiadomość z paddingiem: \n" + str(data) + ".")
 
                     P = []
+
+                    # kolejne segmenty deszyfrowania bloków w trybie CFB
                     for i in range(int(len(data) / K)):
                         print("Deszyfrowanie od " + str(i * K) + " do " + str((i + 1) * K) + " bitów bloku danych.")
                         C_i = data[i * K:(i + 1) * K]
@@ -336,11 +367,11 @@ def tcfb_decrypt(C, K, IV, KEY):
                         P_i = list_xor(C_i, O[:K])
                         P += P_i
                         I_i = I_i[K:] + C_i
-                    # ---------------koniec szyfrowania tcfb
                     print("Odszyfrowana wiadomość w bitach: \n" + str(P))
                     plaintext = list_to_bytes(P).hex()
                     print("Odszyfrowana wiadomość: " + str(plaintext))
                     return plaintext
+# ------------------koniec deszyfrowania tcfb
                 else:
                     raise "Niepoprawny typ klcza!"
             else:
