@@ -1,9 +1,8 @@
-import string
 from type_transformations import *
 
 
 def PC_1(K):
-    PC_indexes = [57, 49, 41, 33, 25, 17, 9,
+    PC1_indexes = [57, 49, 41, 33, 25, 17, 9,
                   1, 58, 50, 42, 34, 26, 18,
                   10, 2, 59, 51, 43, 35, 27,
                   19, 11, 3, 60, 52, 44, 36,
@@ -11,7 +10,7 @@ def PC_1(K):
                   7, 62, 54, 46, 38, 30, 22,
                   14, 6, 61, 53, 45, 37, 29,
                   21, 13, 5, 28, 20, 12, 4]
-    return list(map(lambda x: K[x - 1], PC_indexes))
+    return list(map(lambda x: K[x - 1], PC1_indexes))
 
 
 def left_shift(i, B):
@@ -23,7 +22,7 @@ def left_shift(i, B):
 
 
 def PC_2(K):
-    PC_indexes = [14, 17, 11, 24, 1, 5,
+    PC2_indexes = [14, 17, 11, 24, 1, 5,
                   3, 28, 15, 6, 21, 10,
                   23, 19, 12, 4, 26, 8,
                   16, 7, 27, 20, 13, 2,
@@ -31,7 +30,7 @@ def PC_2(K):
                   30, 40, 51, 45, 33, 48,
                   44, 49, 39, 56, 34, 53,
                   46, 42, 50, 36, 29, 32]
-    return list(map(lambda x: K[x - 1], PC_indexes))
+    return list(map(lambda x: K[x - 1], PC2_indexes))
 
 
 def key_schedule(K):
@@ -189,7 +188,7 @@ def des_encrypt(I, K):
     R_i = P[32:]
 
     L_ip1 = R_i
-    R_ip1 = list_xor(L_i, f(R_i, K_i[i]))
+    R_ip1 = list_xor(L_i, f(R_i, K_i[15]))
     P = R_ip1 + L_ip1
 
     # końcowa permutacja
@@ -200,7 +199,7 @@ def des_encrypt(I, K):
 
 def des_decrypt(C, K):
     if len(C) != 64:
-        print("Dlugość bloku do zaszyforwania: " + str(len(I)))
+        print("Dlugość bloku do zaszyforwania: " + str(len(C)))
         raise "Blok do zaszyfrowania złej długości!"
     if len(K) != 64:
         print("Dlugość klucza: " + str(len(K)))
@@ -226,7 +225,7 @@ def des_decrypt(C, K):
     R_i = P[32:]
 
     L_ip1 = R_i
-    R_ip1 = list_xor(L_i, f(R_i, K_i[i]))
+    R_ip1 = list_xor(L_i, f(R_i, K_i[0]))
     P = R_ip1 + L_ip1
 
     # końcowa permutacja
@@ -256,8 +255,8 @@ def tcfb_encrypt(P, K, IV, KEY):
                         raise "Niepoprawnie kodowanie klucza!"
                 if isinstance(KEY, bytes):
                     key = bytes_to_list(KEY)
-                    K_1 = key[:64]
-                    K_2 = key[64:]
+                    Key_1 = key[:64]
+                    Key_2 = key[64:]
                     # ---------------szyfrowanie tcfb
                     I_i = bytes_to_list(IV)
                     if len(I_i) > 64:
@@ -276,7 +275,7 @@ def tcfb_encrypt(P, K, IV, KEY):
                     for i in range(int(len(data) / K)):
                         print("Szyfrowanie od " + str(i * K) + " do " + str((i + 1) * K) + " bitów bloku danych.")
                         P_i = data[i * K:(i + 1) * K]
-                        O = tdea_encrypt(I_i,K_1, K_2)
+                        O = tdea_encrypt(I_i,Key_1, Key_2)
                         C_i = list_xor(P_i, O[:K])
                         C += C_i
                         I_i = I_i[K:] + C_i
